@@ -1,9 +1,16 @@
 package venediktts.backuper
 
-fun main(args: Array<String>) {
-    println("Hello World!")
+import mu.KotlinLogging
+import venediktts.backuper.config.Config
+import venediktts.backuper.config.ServiceConfigurer
+import java.lang.Exception
 
-    // Try adding program arguments via Run/Debug configuration.
-    // Learn more about running applications: https://www.jetbrains.com/help/idea/running-applications.html.
-    println("Program arguments: ${args.joinToString()}")
+fun main(args: Array<String>) {
+    val log = KotlinLogging.logger("Main")
+    try {
+        val config = Config(args[0])
+        ServiceConfigurer.initServices(config)
+    } catch (e: Exception) {
+        log.error(e.message)
+    }
 }

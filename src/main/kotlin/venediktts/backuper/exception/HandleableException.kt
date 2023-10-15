@@ -1,4 +1,5 @@
 package venediktts.backuper.exception
 
-class HandleableException {
-}
+class HandleableException(
+    message: String
+): RuntimeException(message)

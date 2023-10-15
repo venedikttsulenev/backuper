@@ -1,4 +1,4 @@
-package venediktts.backuper
+package venediktts.backuper.util
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter
 object TimestampUtil {
     private val timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
 
-    public fun parseTimestamp(str: String) = LocalDateTime.parse(str, timestampFormatter)
+    fun parseTimestamp(str: String): LocalDateTime = LocalDateTime.parse(str, timestampFormatter)
 
-    public fun formatTimestamp(localDateTime: LocalDateTime) = localDateTime.format(timestampFormatter);
+    fun formatTimestamp(localDateTime: LocalDateTime): String = localDateTime.format(timestampFormatter);
 }

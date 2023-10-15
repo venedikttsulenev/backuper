@@ -1,9 +1,17 @@
-package venediktts.backuper.backup
+package venediktts.backuper.service
 
+import venediktts.backuper.exception.HandleableException
 import java.io.File
 
-open class DirectoryService(path: String) {
+abstract class DirectoryService(path: String, private val purpose: String) {
     val directory = File(path)
 
-    fun isAvailable() = directory.exists() && directory.isDirectory
+    private fun isAvailable() = directory.exists() && directory.isDirectory
+
+    fun <T> directorySafe(callable: () -> T): T {
+        if (!isAvailable()) {
+            throw HandleableException("$purpose directory is not available")
+        }
+        return callable()
+    }
 }

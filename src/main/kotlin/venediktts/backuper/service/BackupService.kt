@@ -1,7 +1,9 @@
-package venediktts.backuper.backup
+package venediktts.backuper.service
 
 import mu.KotlinLogging
 import venediktts.backuper.config.Config
+import venediktts.backuper.exception.HandleableException
+import venediktts.backuper.model.ExistingCopy
 import venediktts.backuper.model.NewCopy
 import java.lang.Exception
 import java.time.LocalDateTime
@@ -10,7 +12,7 @@ import kotlin.concurrent.timer
 class BackupService(
     config: Config,
     private val sourceDirectoryService: SourceDirectoryService,
-    private val targetDirectoryService: TargetDirectoryService
+    private val copyService: CopyService
 ) {
     private val log = KotlinLogging.logger(this.javaClass.name)
     private val checkPeriodMillis = 1000L * config.getBackupCheckPeriodSeconds()
@@ -29,12 +31,15 @@ class BackupService(
 
     private fun tryBackup() {
         try {
-            if (!sourceDirectoryService.isAvailable()) { log.info("Source directory is not available"); return }
-            val currentDateTime = LocalDateTime.now()
-            if (tooEarlyForNewCopy(currentDateTime)) { log.info("Last copy is relevant"); return }
-            val checksum = sourceDirectoryService.calculateCheckSum()
-            if (checksumNotChanged(checksum)) { log.info("No changes detected ($checksum)"); return }
-            createBackup(currentDateTime, checksum)
+            val lastCopy = copyService.getLastExistingCopy()
+            val timestamp = LocalDateTime.now()
+            val checksum = sourceDirectoryService.getDigest()
+            if (tooEarlyForNewCopy(timestamp, lastCopy) || checksumNotChanged(checksum, lastCopy)) {
+                return
+            }
+            createBackup(timestamp, checksum)
+        } catch (e: HandleableException) {
+            log.info(e.message)
         } catch (e: Exception) {
             log.error("Error trying to backup: ${e.message}", e)
         }
@@ -42,21 +47,13 @@ class BackupService(
 
     private fun createBackup(timestamp: LocalDateTime, checksum: String) {
         val newCopy = NewCopy(timestamp, sourceDirectoryService.directory, checksum)
-        targetDirectoryService.createNewCopy(newCopy)
-            .also { log.info("Created new copy at target directory") }
-        targetDirectoryService.createBackupZipFile(sourceDirectoryService.directory, timestamp)
-            .also { log.info("Created '$it' at target directory") }
-        targetDirectoryService.createBackupChecksumFile(timestamp, checksum!!)
-            .also { log.info("Created '$it' at target directory") }
+        copyService.createNewCopy(newCopy)
+            .also { log.info("Created new copy at target directory (timestamp: $timestamp, checksum: $checksum)") }
     }
 
-    private fun tooEarlyForNewCopy(currentDateTime: LocalDateTime): Boolean {
-        val lastCopyDateTime = targetDirectoryService.getLastCopyDateTime()
-        return lastCopyDateTime != null && lastCopyDateTime.plusSeconds(copyPeriodSeconds).isAfter(currentDateTime)
-    }
+    private fun tooEarlyForNewCopy(currentDateTime: LocalDateTime, lastCopy: ExistingCopy?) =
+        lastCopy != null && lastCopy.timestamp.plusSeconds(copyPeriodSeconds).isAfter(currentDateTime)
 
-    private fun checksumNotChanged(currentChecksum: String?): Boolean {
-        val lastCopyChecksum = targetDirectoryService.getLastCopyChecksum()
-        return lastCopyChecksum.equals(currentChecksum)
-    }
+    private fun checksumNotChanged(currentChecksum: String?, lastCopy: ExistingCopy?) =
+        lastCopy != null && lastCopy.checksumFile.equals(currentChecksum)
 }
