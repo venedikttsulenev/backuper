@@ -55,5 +55,5 @@ class BackupService(
         lastCopy != null && lastCopy.timestamp.plusSeconds(copyPeriodSeconds).isAfter(currentDateTime)
 
     private fun checksumNotChanged(currentChecksum: String?, lastCopy: ExistingCopy?) =
-        lastCopy != null && lastCopy.checksumFile.equals(currentChecksum)
+        lastCopy != null && lastCopy.checksumFile.readText(Charsets.UTF_8) == currentChecksum
 }
