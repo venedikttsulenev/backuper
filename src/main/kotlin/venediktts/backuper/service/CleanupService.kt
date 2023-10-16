@@ -38,7 +38,7 @@ class CleanupService(
         val lastCopy = copyService.getLastExistingCopy()
         val minTimestampToRetain = currentTimestamp.minusSeconds(config.getCleanupFileTTLSeconds())
         val filesToRemove = copyService.getCopyFilesByTimestamp()
-            .filter { it.first.isBefore(minTimestampToRetain) && !it.first.isEqual(lastCopy.timestamp) }
+            .filter { it.first.isBefore(minTimestampToRetain) && !(lastCopy?.timestamp?.isEqual(it.first) ?: false) }
             .map(Pair<LocalDateTime, File>::second)
         filesToRemove.forEach(File::delete)
         log.info("Removed ${filesToRemove.size} outdated files.")

@@ -9,20 +9,21 @@ import java.time.LocalDateTime
 
 class CopyService(
     config: Config,
-    private val zipService: ZipService,
     private val targetDirectoryService: TargetDirectoryService
 ) {
     private val filePrefix = config.getBackupFilePrefix()
 
-    fun getLastExistingCopy(): ExistingCopy {
+    fun getLastExistingCopy(): ExistingCopy? {
         val zipFiles = getZipFilesByTimestamp()
         val checksumFiles = getChecksumFilesByTimestamp()
-        val maxExistingTimestamp = zipFiles.keys.intersect(checksumFiles.keys).max()
-        return ExistingCopy(
-            maxExistingTimestamp,
-            zipFiles[maxExistingTimestamp]!!,
-            checksumFiles[maxExistingTimestamp]!!
-        )
+        val maxExistingTimestamp = zipFiles.keys.intersect(checksumFiles.keys).maxOrNull()
+        return maxExistingTimestamp?.let {
+            ExistingCopy(
+                maxExistingTimestamp,
+                zipFiles[maxExistingTimestamp]!!,
+                checksumFiles[maxExistingTimestamp]!!
+            )
+        }
     }
 
     fun getCopyFilesByTimestamp(): List<Pair<LocalDateTime, File>> =

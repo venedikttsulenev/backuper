@@ -12,7 +12,7 @@ object ServiceConfigurer {
         val sourceDirService = SourceDirectoryService(config, fileDigestService)
         val zipService = ZipService()
         val targetDirService = TargetDirectoryService(config, zipService)
-        val copyService = CopyService(config, zipService, targetDirService)
+        val copyService = CopyService(config, targetDirService)
         BackupService(config, sourceDirService, copyService)
         CleanupService(config, copyService)
     }

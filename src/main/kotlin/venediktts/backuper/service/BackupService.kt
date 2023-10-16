@@ -31,13 +31,7 @@ class BackupService(
 
     private fun tryBackup() {
         try {
-            val lastCopy = copyService.getLastExistingCopy()
-            val timestamp = LocalDateTime.now()
-            val checksum = sourceDirectoryService.getDigest()
-            if (tooEarlyForNewCopy(timestamp, lastCopy) || checksumNotChanged(checksum, lastCopy)) {
-                return
-            }
-            createBackup(timestamp, checksum)
+            createBackup(LocalDateTime.now())
         } catch (e: HandleableException) {
             log.info(e.message)
         } catch (e: Exception) {
@@ -45,8 +39,13 @@ class BackupService(
         }
     }
 
-    private fun createBackup(timestamp: LocalDateTime, checksum: String) {
-        val newCopy = NewCopy(timestamp, sourceDirectoryService.directory, checksum)
+    private fun createBackup(timestamp: LocalDateTime) {
+        val checksum = sourceDirectoryService.getDigest()
+        val lastCopy = copyService.getLastExistingCopy()
+        if (tooEarlyForNewCopy(timestamp, lastCopy) || checksumNotChanged(checksum, lastCopy)) {
+            return
+        }
+        val newCopy = NewCopy(timestamp, sourceDirectoryService.getDirectorySafe(), checksum)
         copyService.createNewCopy(newCopy)
             .also { log.info("Created new copy at target directory (timestamp: $timestamp, checksum: $checksum)") }
     }
